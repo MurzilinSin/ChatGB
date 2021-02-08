@@ -24,7 +24,7 @@ public class MyServer {
         return authService;
     }
 
-    public void start() {
+    public void start() throws IOException {
         System.out.println("Сервер запущен!");
         try {
             while (true) {
@@ -39,9 +39,9 @@ public class MyServer {
     private void waitAndProcessClientConnection() throws IOException {
         System.out.println("Ожидание...");
         Socket socket = serverSocket.accept();
-        System.out.println("Клиент уже тут!");
 
         processClientConnection(socket);
+        System.out.println("Клиент уже тут!");
     }
 
     private void processClientConnection(Socket socket) throws IOException {
@@ -50,7 +50,6 @@ public class MyServer {
     }
 
     public synchronized void subscribe (ClientHandler clientHandler) {
-        System.out.println(clientHandler.getUsername() + " присоединился");
         clients.add(clientHandler);
     }
 
@@ -67,22 +66,27 @@ public class MyServer {
         return false;
     }
 
-    public synchronized void broadcastMessage(String message, ClientHandler sender) throws IOException {
+    public synchronized void broadcastMessage(String message, ClientHandler sender, boolean isServerMessage) throws IOException {
         for (ClientHandler client : clients) {
             if(client == sender) {
                 continue;
             }
-            client.sendMessage(sender.getUsername(), message);
+            client.sendMessage(isServerMessage ? "" : sender.getUsername(), message);
         }
     }
 
-     public void broadcastMessage(String message, ClientHandler sender, String whomSend) throws IOException {
+    public synchronized void broadcastMessage(String message, ClientHandler  sender) throws IOException {
+        broadcastMessage(message, sender, false);
+    }
+
+     public void sendPrivateMessage(String message, ClientHandler sender, String whomSend) throws IOException {
          for (ClientHandler client : clients) {
              if(client.getUsername().equals(whomSend)) {
                  client.sendMessage(sender.getUsername(), message);
-                 System.out.println("Приватное прошло!");
              }
          }
      }
+
+
 
 }

@@ -3,6 +3,8 @@ package chat.server;
 import chat.server.chat.MyServer;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class ServerApp {
 
@@ -10,7 +12,6 @@ public class ServerApp {
 
     public static void main(String[] args) {
         int port = DEFAULT_PORT;
-
         if(args.length != 0){
             port = Integer.parseInt(args[0]);
         }
@@ -23,4 +24,5 @@ public class ServerApp {
             System.exit(1);
         }
     }
+
 }

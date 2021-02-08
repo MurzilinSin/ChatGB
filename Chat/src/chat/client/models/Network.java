@@ -1,13 +1,13 @@
 package chat.client.models;
 
-import chat.client.controllers.ViewController;
-import javafx.scene.control.Alert;
-import sun.nio.ch.Net;
+import chat.client.controllers.ChatController;
+import javafx.application.Platform;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class Network {
     private static final String AUTH_CMD_PREFIX = "/auth";
@@ -24,6 +24,7 @@ public class Network {
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
+    private String username;
 
     private final int port;
     private final String host;
@@ -31,6 +32,10 @@ public class Network {
     public Network(String host, int port){
         this.host = host;
         this.port = port;
+    }
+
+    public Socket getSocket() {
+        return socket;
     }
 
     public Network() {
@@ -53,15 +58,31 @@ public class Network {
         return out;
     }
 
+    public String getUsername() {
+        return username;
+    }
 
-    public void waitMessage(ViewController viewController) {
+
+    public void waitMessage(ChatController chatController) {
         Thread thread = new Thread(() -> {
            try {
                while (true){
                    String message = in.readUTF();
-                   if(!message.isEmpty()){
-                       viewController.appendMessage("Я: " + message);
-                       System.out.println(message);
+                   if (message.startsWith(CLIENT_MSG_CMD_PREFIX)) {
+                       String[] parts = message.split("\\s+", 3);
+                       String sender = parts[1];
+                       String messageFromUser = parts[2];
+                       Platform.runLater(() -> chatController.appendMessage(String.format("%s: %s", sender, messageFromUser)));
+                   }
+                   else if (message.startsWith(SERVER_MSG_CMD_PREFIX)) {
+                       String[] parts = message.split("\\s+", 2);
+
+                       String messageFromUser = parts[2];
+
+                       Platform.runLater(() -> chatController.appendMessage(messageFromUser));
+                   }
+                   else {
+                       Platform.runLater(() -> System.out.println("НЕИЗВЕСТНАЯ ОШИБКА СЕРВЕРА"));
                    }
                }
            } catch (IOException e){
@@ -70,5 +91,29 @@ public class Network {
         });
         thread.setDaemon(true);
         thread.start();
+    }
+
+    public String sendAuthCommand(String login, String password) {
+        try {
+            out.writeUTF(String.format("%s %s %s", AUTH_CMD_PREFIX, login, password));
+            String response = in.readUTF();
+            if (response.startsWith(AUTHOK_CMD_PREFIX)) {
+                this.username = response.split("\\s+", 2)[1];
+                return null;
+            } else {
+                return response.split("\\s+", 2)[1];
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
+    public void sendMessage(String message) throws IOException {
+        out.writeUTF(message);
+    }
+    public void sendPrivateMessage(String message, String recipient) throws IOException {
+        String command = String.format("%s,%s,%s", PRIVATE_MSG_CMD_PREFIX, recipient, message);
+        sendMessage(command);
     }
 }
