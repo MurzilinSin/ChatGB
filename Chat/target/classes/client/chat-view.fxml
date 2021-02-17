@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.effect.Glow?>
+<?import javafx.scene.effect.ImageInput?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.text.Font?>
+
+<GridPane alignment="CENTER" hgap="10" vgap="10" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controllers.ChatController">
+    <columnConstraints>
+        <ColumnConstraints />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints />
+    </rowConstraints>
+    <children>
+        <BorderPane prefHeight="469.0" prefWidth="614.0">
+            <bottom>
+                <SplitPane dividerPositions="0.8873" prefHeight="54.0" prefWidth="568.0" BorderPane.alignment="CENTER">
+                    <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                            <children>
+                                <TextField fx:id="textField" layoutX="115.0" layoutY="14.0" onAction="#enterMessage" prefWidth="425.0" promptText="Написать сообщение..." AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                    <padding>
+                                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                                    </padding>
+                                    <font>
+                                        <Font name="Times New Roman" size="20.0" />
+                                    </font>
+                                </TextField>
+                            </children>
+                        </AnchorPane>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                            <children>
+                                <Button mnemonicParsing="false" onAction="#enterMessage" text="Самолет" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                           <effect>
+                              <ImageInput x="4.0" y="2.0">
+                                 <source>
+                                    <Image url="file:/G:/Aibo/Загрузки/send_icon_154863.png" />
+                                 </source>
+                              </ImageInput>
+                           </effect></Button>
+                            </children>
+                        </AnchorPane>
+                    </items>
+                </SplitPane>
+            </bottom>
+            <left>
+                <ListView fx:id="usersList" prefHeight="413.0" prefWidth="189.0" BorderPane.alignment="CENTER" />
+            </left>
+            <center>
+                <TextArea fx:id="windowChat" editable="false" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+               <font>
+                  <Font name="Drift Wood" size="12.0" />
+               </font></TextArea>
+            </center>
+         <top>
+            <Pane prefHeight="51.0" prefWidth="614.0" BorderPane.alignment="CENTER">
+               <children>
+                  <TextField fx:id="fieldToChangeNick" layoutX="188.0" layoutY="4.0" onAction="#changeNick" prefHeight="42.0" prefWidth="340.0" visible="false" />
+                  <Label fx:id="textChangeUsername" alignment="CENTER" layoutX="485.0" layoutY="8.0" onMouseClicked="#showTextfield" prefHeight="36.0" prefWidth="115.0" text="Сменить ник">
+                     <font>
+                        <Font name="Minisystem" size="14.0" />
+                     </font>
+                  </Label>
+                  <Label fx:id="fieldToUsername" layoutX="189.0" layoutY="-2.0" prefHeight="54.0" prefWidth="306.0">
+                     <font>
+                        <Font name="Garamond" size="22.0" />
+                     </font>
+                     <effect>
+                        <Glow level="0.76" />
+                     </effect>
+                  </Label>
+               </children>
+            </Pane>
+         </top>
+        </BorderPane>
+    </children>
+</GridPane>
