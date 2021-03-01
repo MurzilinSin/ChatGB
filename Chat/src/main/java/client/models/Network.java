@@ -2,6 +2,7 @@ package client.models;
 
 import client.controllers.ChatController;
 import javafx.application.Platform;
+import org.apache.log4j.Logger;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -31,6 +32,9 @@ public class Network {
 
     private final int port;
     private final String host;
+
+    public static final Logger logToFile = Logger.getLogger("file");
+    public static final Logger logToConsole = Logger.getLogger("console");
 
     public Network(String host, int port){
         this.host = host;
@@ -64,7 +68,8 @@ public class Network {
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
         } catch (IOException e) {
-            System.out.println("Соединение не установлено");
+            logToConsole.error("Соединение не установлено",e);
+            logToFile.error("Соединение не установлено",e);
             e.printStackTrace();
         }
     }
@@ -89,22 +94,25 @@ public class Network {
                         String[] parts = message.split("\\s+",2);
                         if(message.startsWith(CHANGE_ERROR_CMD_PREFIX)) {
                             Platform.runLater(() -> chatController.tryChangeName("НЕ ПРОШЛО", false));
-                            System.out.println("Прошел False");
-
+                            logToConsole.error("Никнейм не сменился");
+                            logToFile.error("Никнейм не сменился");
                         }else {
                             System.out.println(parts.length);
                             System.out.println(parts[0]);
                             String newUsername = parts[1];
                             Platform.runLater(() -> chatController.tryChangeName(newUsername, true));
-                            System.out.println("Прошел True");
+                            logToConsole.info("Никнейм сменился");
+                            logToFile.info("Никнейм сменился");
                         }
                     }
                     else {
-                        Platform.runLater(() -> System.out.println("НЕИЗВЕСТНАЯ ОШИБКА СЕРВЕРА"));
+                        Platform.runLater(() -> logToConsole.error("Никнейм сменился"));
+                        Platform.runLater(() -> logToFile.error("Никнейм сменился"));
                     }
                 }
             } catch (IOException e){
-                System.err.println("Ошибка подключения");
+                logToConsole.error("Ошибка подключения");
+                logToFile.error("Ошибка подключения");
             }
         });
         thread.setDaemon(true);

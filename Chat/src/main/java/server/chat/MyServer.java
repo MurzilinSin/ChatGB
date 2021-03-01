@@ -2,6 +2,8 @@ package server.chat;
 
 
 
+import org.apache.log4j.Logger;
+import server.ServerApp;
 import server.chat.auth.BaseAuthService;
 import server.chat.handler.ClientHandler;
 
@@ -21,6 +23,9 @@ public class MyServer {
     public Statement stmt;
     public  ResultSet rs;
 
+    public static final Logger logToFile = Logger.getLogger("file");
+    public static final Logger logToConsole = Logger.getLogger("console");
+
     public MyServer(int port) throws IOException {
         this.serverSocket = new ServerSocket(port);
         this.authService = new BaseAuthService();
@@ -31,11 +36,13 @@ public class MyServer {
     }
 
     public void start() throws IOException {
-        System.out.println("Сервер запущен!");
+        logToConsole.info("Сервер запущен!");
+        logToFile.info("Сервер запущен!");
         try {
             connectionDB();
         } catch (ClassNotFoundException | SQLException e) {
-            e.printStackTrace();
+            logToConsole.error("Ошибка с базой данных либо ошибка с поискам класса",e);
+            logToFile.error("Ошибка с базой данных либо ошибка с поискам класса",e);
         }
 
         try {
@@ -44,23 +51,27 @@ public class MyServer {
             }
         }
         catch(IOException e) {
-            e.printStackTrace();
+            logToConsole.error("Произошло исключение ввода-вывода",e);
+            logToFile.error("Произошло исключение ввода-вывода",e);
         }
 
         try {
             disconnectionDB();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException e) {
+            logToConsole.error("Ошибка с базой данных",e);
+            logToFile.error("Ошибка с базой данных",e);
         }
     }
 
 
     private void waitAndProcessClientConnection() throws IOException {
-        System.out.println("Ожидание...");
+        logToConsole.info("Ожидание...");
+        logToFile.info("Ожидание...");
         Socket socket = serverSocket.accept();
 
         processClientConnection(socket);
-        System.out.println("Клиент уже тут!");
+        logToConsole.info("Клиент уже тут!");
+        logToFile.info("Клиент уже тут!");
     }
 
     private void processClientConnection(Socket socket) throws IOException {
@@ -73,7 +84,8 @@ public class MyServer {
     }
 
     public synchronized void unSubscribe (ClientHandler clientHandler) {
-        System.out.println("Клиент покинул чат");
+        logToConsole.info("Клиент покинул чат");
+        logToFile.info("Клиент покинул чат");
         clients.remove(clientHandler);
     }
 

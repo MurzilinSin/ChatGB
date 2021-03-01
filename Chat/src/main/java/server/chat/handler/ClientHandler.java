@@ -1,5 +1,6 @@
 package server.chat.handler;
 
+import org.apache.log4j.Logger;
 import org.w3c.dom.ls.LSOutput;
 import server.chat.MyServer;
 import server.chat.auth.AuthService;
@@ -29,7 +30,10 @@ public class ClientHandler {
     private static final String END_CMD_PREFIX = "/end"; //
     private static final String CHANGE_USERNAME_CMD_PREFIX = "/change"; // префикс для изменнения никнейма
     public static final String CHANGE_ERROR_CMD_PREFIX = "/changerr"; // префикс, если никнейм нельзя изменить
+
     private String username;
+    public static final Logger logToFile = Logger.getLogger("file");
+    public static final Logger logToConsole = Logger.getLogger("console");
 
     public ClientHandler(MyServer myServer, Socket socket) {
         this.myServer = myServer;
@@ -46,12 +50,14 @@ public class ClientHandler {
             try {
                 try {
                     authentication();
-                } catch (SQLException throwables) {
-                    throwables.printStackTrace();
+                } catch (SQLException e) {
+                    logToConsole.error("Ошибка с базой данных",e);
+                    logToFile.error("Ошибка с базой данных",e);
                 }
                 readMessage();
             } catch (IOException e) {
-                System.out.println(e.getMessage());
+                logToConsole.error("Произошло исключение ввода-вывода",e);
+                logToFile.error("Произошло исключение ввода-вывода",e);
             }
         }).start();
     }
@@ -75,14 +81,23 @@ public class ClientHandler {
         String login = parts[1];
         String password = parts[2];
 
-        myServer.rs = myServer.stmt.executeQuery(String.format("SELECT username FROM clients WHERE login = '%s' AND password = '%s'", login, password));
-        System.out.println(myServer.rs.getString("username") + " ЭТИ данные взяты из БД!");
-        username = myServer.rs.getString("username");
+        try{
+            myServer.rs = myServer.stmt.executeQuery(String.format("SELECT username FROM clients WHERE login = '%s' AND password = '%s'", login, password));
+            System.out.println(myServer.rs.getString("username") + " ЭТИ данные взяты из БД!");
+            username = myServer.rs.getString("username");
+        }
+        catch (SQLException e){
+            out.writeUTF(AUTHERR_CMD_PREFIX + " Логин или пароль не соответствуют действительности");
+            logToConsole.error("Ошибка авторизации");
+            logToFile.error("Ошибка авторизации");
+            return false;
+        }
 
         if (username != null) {
             if (myServer.isUserNameBusy(username)) {
                 out.writeUTF(AUTHERR_CMD_PREFIX + " Логин уже используется");
-                System.out.println("Login in use");
+                logToConsole.info("Логин уже используется");
+                logToFile.info("Логин уже используется");
                 return false;
             }
             out.writeUTF(AUTHOK_CMD_PREFIX + " " + username);
@@ -99,7 +114,8 @@ public class ClientHandler {
     private void readMessage() throws IOException {
         while (true) {
             String message = in.readUTF();
-            System.out.println("message | " + username + ": " + message);
+            logToConsole.info("message | " + username + ": " + message);
+            logToFile.info("message | " + username + ": " + message);
             if (message.startsWith(END_CMD_PREFIX)) {
                 return;
             }
@@ -121,9 +137,9 @@ public class ClientHandler {
                     boolean isUsernameBusy = false;
                     for (int i = 0; i < nameClients.size(); i++) {
                         if(newUsername.equals(nameClients.get(i))){
-                            System.err.println("Есть совпадение!");
                             out.writeUTF(CHANGE_ERROR_CMD_PREFIX);
-                            System.out.println("Прошел error");
+                            logToConsole.error("Такой никнейм уже есть");
+                            logToFile.error("Такой никнейм уже есть");
                             isUsernameBusy = true;
                         }
                     }
@@ -136,13 +152,14 @@ public class ClientHandler {
                     username = newUsername;
 
                     out.writeUTF(String.format("%s %s", CHANGE_USERNAME_CMD_PREFIX, username));
-                    System.out.println("Прошел CHANGE");
+                    logToConsole.info("Никнейм сменился на " + username);
+                    logToFile.info("Никнейм сменился " + username);
                     myServer.broadcastMessage(String.format(">>> %s изменил свой никнейм на %s", oldUsername, newUsername), this, true);
 
-                } catch (SQLException throwables) {
+                } catch (SQLException e) {
                     out.writeUTF(CHANGE_ERROR_CMD_PREFIX);
-                    System.out.println("Прошел error");
-                    System.err.println("Ошибка смена никнейма");
+                    logToConsole.error("Ошибка изменений никнейма",e);
+                    logToFile.error("Ошибка изменений никнейма",e);
                 }
             }
             else {

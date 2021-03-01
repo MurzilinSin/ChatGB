@@ -9,6 +9,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 import java.io.IOException;
 
@@ -20,8 +22,12 @@ public class ChatGB extends Application {
     private Stage authStage;
     private ChatController chatController;
 
+    public static final Logger logToFile = Logger.getLogger("file");
+    public static final Logger logToConsole = Logger.getLogger("console");
+
     @Override
     public void start(Stage primaryStage) throws Exception{
+        PropertyConfigurator.configure("src/main/resources/log/config/log4j.properties");
         this.primaryStage = primaryStage;
         primaryStage.setAlwaysOnTop(false);
         network = new Network();
@@ -34,7 +40,8 @@ public class ChatGB extends Application {
                 System.exit(0);
                 network.getSocket().close();
             } catch (IOException e) {
-                e.printStackTrace();
+                logToConsole.error("Сокет не закрывается",e);
+                logToFile.error("Сокет не закрывается",e);
             }
         });
     }

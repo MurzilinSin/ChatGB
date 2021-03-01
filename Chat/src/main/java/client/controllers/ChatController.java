@@ -6,6 +6,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.WindowEvent;
+import org.apache.log4j.Logger;
 import server.chat.MyServer;
 import server.chat.handler.ClientHandler;
 
@@ -35,6 +36,8 @@ public class ChatController {
     private Network network;
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy.MM.dd|HH:mm:ss");
 
+    public static final Logger logToFile = Logger.getLogger("file");
+    public static final Logger logToConsole = Logger.getLogger("console");
 
     public void setNetwork(Network network) {
         this.network = network;
@@ -50,8 +53,8 @@ public class ChatController {
         try {
             network.sendMessage(message);
         } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Ошибка при отправке сообщения");
+            logToConsole.error("Ошибка при отправке сообщения",e);
+            logToFile.error("Ошибка при отправке сообщения",e);
         }
         textField.clear();
     }
@@ -96,15 +99,16 @@ public class ChatController {
         try {
             network.sendMessage("/change "+ newUsername);
         } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Ошибка при смене ника");
+            logToConsole.error("Ошибка при смене ника",e);
+            logToFile.error("Ошибка при смене ника",e);
         }
     }
 
     public void tryChangeName(String newUsername, boolean isChanged) {
         if(isChanged){
             fieldToUsername.setText(newUsername);
-            System.out.println(network.isUsernameChanged);
+            logToConsole.info(network.isUsernameChanged);
+            logToFile.info(network.isUsernameChanged);
         }
         else {
             Alert error = new Alert(Alert.AlertType.INFORMATION);
@@ -152,10 +156,9 @@ public class ChatController {
                     windowChat.appendText(System.lineSeparator());
                 }
             }
-           
-
         } catch (IOException e) {
-            e.printStackTrace();
+            logToConsole.error("Файл не может быть прочтен",e);
+            logToFile.error("Файл не может быть прочтен",e);
         }
 
     }

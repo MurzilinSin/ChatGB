@@ -6,6 +6,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import org.apache.log4j.Logger;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -19,6 +20,9 @@ public class AuthController {
     private Network network;
     private ChatGB mainChatGB;
     private boolean authentication = false;
+
+    public static final Logger logToFile = Logger.getLogger("file");
+    public static final Logger logToConsole = Logger.getLogger("console");
 
     @FXML
     public void initialize() {
@@ -39,7 +43,8 @@ public class AuthController {
         String password = passwordField.getText().trim();
 
         if(login.length() == 0 || password.length() == 0) {
-            System.out.println("!!Поля не должны быть пустыми");
+            logToConsole.error("Поля не должны быть пустыми");
+            logToFile.error("Поля не должны быть пустыми");
             return;
         }
 
@@ -50,7 +55,8 @@ public class AuthController {
             mainChatGB.openChat();
         }
         else {
-            System.out.println("!!Ошибка аутентификации");
+            logToConsole.error("!!Ошибка аутентификации");
+            logToFile.error("!!Ошибка аутентификации");
         }
 
     }
