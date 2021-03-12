@@ -83,6 +83,11 @@
                         <Glow level="0.76" />
                      </effect>
                   </Label>
+                  <Button fx:id="cancel" layoutX="528.0" layoutY="3.0" mnemonicParsing="false" onAction="#cancelChange" prefHeight="44.0" prefWidth="76.0" text="Отмена" visible="false">
+                     <font>
+                        <Font size="15.0" />
+                     </font>
+                  </Button>
                </children>
             </Pane>
          </top>

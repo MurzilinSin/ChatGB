@@ -1,16 +1,13 @@
 package client;
 
-import client.controllers.AuthController;
-import client.controllers.ChatController;
+import client.controllers.*;
 import client.models.Network;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-import org.apache.log4j.Logger;
+import javafx.scene.*;
+import javafx.stage.*;
 import org.apache.log4j.PropertyConfigurator;
+import server.Logging;
 
 import java.io.IOException;
 
@@ -18,12 +15,10 @@ public class ChatGB extends Application {
 
     private Network network;
     private Stage primaryStage;
-
     private Stage authStage;
+    private Stage regStage;
     private ChatController chatController;
-
-    public static final Logger logToFile = Logger.getLogger("file");
-    public static final Logger logToConsole = Logger.getLogger("console");
+    private Logging log = new Logging();
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -32,16 +27,16 @@ public class ChatGB extends Application {
         primaryStage.setAlwaysOnTop(false);
         network = new Network();
         network.connect();
-
         openAuthDialog();
+        openRegDialog();
         createChatDialog();
         primaryStage.setOnCloseRequest(windowEvent -> {
             try {
-                System.exit(0);
+                network.exitForReal();
                 network.getSocket().close();
+                System.exit(0);
             } catch (IOException e) {
-                logToConsole.error("Сокет не закрывается",e);
-                logToFile.error("Сокет не закрывается",e);
+                log.error("Сокет не закрывается",e);
             }
         });
     }
@@ -49,36 +44,57 @@ public class ChatGB extends Application {
     private void openAuthDialog() throws IOException {
         FXMLLoader loader = new FXMLLoader();
         loader.setLocation(ChatGB.class.getResource("auth-view.fxml"));
-
         Parent root = loader.load();
         authStage = new Stage();
-
         authStage.setTitle("Authentication");
         authStage.setScene(new Scene(root));
         authStage.initModality(Modality.WINDOW_MODAL);
         authStage.initOwner(primaryStage);
         authStage.show();
-
         AuthController authController = loader.getController();
         authController.setNetwork(network);
         authController.setChatGB(this);
+        authStage.setOnCloseRequest(windowEvent -> {
+            try {
+                network.exitForReal();
+                network.getSocket().close();
+                System.exit(0);
+            } catch (IOException e) {
+                log.error("Сокет не закрывается",e);
+            }
+        });
+    }
+
+    private void openRegDialog() throws IOException {
+        FXMLLoader loader = new FXMLLoader();
+        loader.setLocation(ChatGB.class.getResource("reg-view.fxml"));
+        Parent root = loader.load();
+        regStage = new Stage();
+        regStage.setTitle("Регистрация");
+        regStage.setScene(new Scene(root));
+        regStage.initModality(Modality.WINDOW_MODAL);
+        regStage.initOwner(authStage);
+        RegController regController = loader.getController();
+        regController.setNetwork(network);
+        regController.setChatGb(this);
+        regStage.setOnCloseRequest(windowEvent -> {
+            regStage.close();
+            try {
+                openAuthDialog();
+            } catch (IOException e) {
+                log.error("Сокет не закрывается",e);
+            }
+        });
     }
 
     private void createChatDialog() throws IOException {
         FXMLLoader loader = new FXMLLoader();
         loader.setLocation(ChatGB.class.getResource("chat-view.fxml"));
-
         Parent root = loader.load();
-
         primaryStage.setTitle("Проклятый чат");
         primaryStage.setScene(new Scene(root));
-
         chatController = loader.getController();
         chatController.setNetwork(network);
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 
     public void openChat() {
@@ -90,5 +106,17 @@ public class ChatGB extends Application {
         chatController.chatHistory();
     }
 
+    public void openRegistration(){
+        authStage.close();
+        regStage.show();
+    }
 
+    public void openAuthAfterReg(){
+        regStage.close();
+        authStage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
 }

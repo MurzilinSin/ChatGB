@@ -1,14 +1,14 @@
 package client.controllers;
 
+import client.AlertMessage;
 import client.models.Network;
-import javafx.application.Platform;
-import javafx.event.ActionEvent;
+import javafx.collections.*;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.stage.WindowEvent;
+import javafx.scene.input.MouseEvent;
 import org.apache.log4j.Logger;
-import server.chat.MyServer;
-import server.chat.handler.ClientHandler;
+import server.Logging;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -28,19 +28,47 @@ public class ChatController {
     @FXML
     public Label fieldToUsername;
     @FXML
-    private TextArea windowChat;
-
+    public Button cancel;
     @FXML
-    private ListView<String> usersList;
-
+    private TextArea windowChat;
+    public ObservableList<String> users = FXCollections.observableArrayList();
+    @FXML
+    private ListView<String> usersList = new ListView<>(users);
     private Network network;
+    private String selectedRecipient;
+    private AlertMessage alert = new AlertMessage();
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy.MM.dd|HH:mm:ss");
-
-    public static final Logger logToFile = Logger.getLogger("file");
-    public static final Logger logToConsole = Logger.getLogger("console");
+    private Logging log = new Logging();
+    private static final String PRIVATE_MSG_CMD_PREFIX = "/w";
 
     public void setNetwork(Network network) {
         this.network = network;
+    }
+
+    @FXML
+    public void initialize() {
+        displayListview();
+        usersList.setCellFactory(lv -> {
+            MultipleSelectionModel<String> selectionModel = usersList.getSelectionModel();
+            ListCell<String> cell = new ListCell<>();
+            cell.textProperty().bind(cell.itemProperty());
+            cell.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+                usersList.requestFocus();
+                if (!cell.isEmpty()) {
+                    int index = cell.getIndex();
+                    if (selectionModel.getSelectedIndices().contains(index)) {
+                        selectionModel.clearSelection(index);
+                        selectedRecipient = null;
+                    } else {
+                        selectionModel.select(index);
+                        selectedRecipient = cell.getItem();
+                    }
+                    event.consume();
+                }
+            });
+            return cell;
+        });
+
     }
 
     @FXML
@@ -49,12 +77,22 @@ public class ChatController {
         if(message.isEmpty()) {
             return;
         }
-        appendMessage("Я: " + message);
+        if(message.startsWith(PRIVATE_MSG_CMD_PREFIX)){
+            String[] parts = message.split("\\s+",3);
+            textField.setStyle("-fx-text-fill: green; -fx-font-size: 16px;");
+            appendMessage("Приватное соощение для " + parts[1] +  ": " + parts[2]);
+        }else {
+            appendMessage("Я: " + message);
+        }
         try {
-            network.sendMessage(message);
+            if(selectedRecipient != null) {
+                network.sendPrivateMessage(message,selectedRecipient);
+            }
+            else{
+                network.sendMessage(message);
+            }
         } catch (IOException e) {
-            logToConsole.error("Ошибка при отправке сообщения",e);
-            logToFile.error("Ошибка при отправке сообщения",e);
+            log.error("Ошибка при отправке сообщения",e);
         }
         textField.clear();
     }
@@ -81,52 +119,52 @@ public class ChatController {
     @FXML
     public void showTextfield(){
         fieldToChangeNick.setVisible(true);
+        cancel.setVisible(true);
         textChangeUsername.setVisible(false);
         fieldToUsername.setVisible(false);
     }
 
     @FXML
-    public void changeNick() throws SQLException, ClassNotFoundException {
+    public void changeNick() {
         String newUsername = fieldToChangeNick.getText().trim();
         if(newUsername.isEmpty()){
-            Alert error = new Alert(Alert.AlertType.INFORMATION);
-            error.setTitle("Ошибка");
-            error.setHeaderText(null);
-            error.setContentText("Ник пустым быть не может!");
-            error.showAndWait();
+            alert.showMessage("Ошибка","Ник пустым быть не может!");
             return;
         }
         try {
             network.sendMessage("/change "+ newUsername);
         } catch (IOException e) {
-            logToConsole.error("Ошибка при смене ника",e);
-            logToFile.error("Ошибка при смене ника",e);
+            log.error("Ошибка при смене ника",e);
         }
+    }
+
+    @FXML
+    public void cancelChange(){
+        hideEverythingAndShowSomething();
     }
 
     public void tryChangeName(String newUsername, boolean isChanged) {
         if(isChanged){
             fieldToUsername.setText(newUsername);
-            logToConsole.info(network.isUsernameChanged);
-            logToFile.info(network.isUsernameChanged);
+            log.info("Ник сменился: " + network.isUsernameChanged);
         }
         else {
-            Alert error = new Alert(Alert.AlertType.INFORMATION);
-            error.setTitle("Ошибка");
-            error.setHeaderText(null);
-            error.setContentText("Ник уже занят!");
-            error.showAndWait();
+            alert.showMessage("Ошибка","Ник уже занят!");
             return;
         }
+        hideEverythingAndShowSomething();
+    }
+
+    public void hideEverythingAndShowSomething(){
         fieldToChangeNick.clear();
         fieldToChangeNick.setVisible(false);
+        cancel.setVisible(false);
         textChangeUsername.setVisible(true);
         fieldToUsername.setVisible(true);
     }
 
     public void chatHistory() {
         File file = new File(String.format("src/main/resources/lib/'%s'.chatHistory.txt",network.getLogin()));
-
         if(!file.exists()) {
             try {
                 file.createNewFile();
@@ -136,7 +174,6 @@ public class ChatController {
         }
         try(BufferedReader reader = new BufferedReader(new FileReader(file))) {
             long count = Files.lines(Path.of(String.format("src/main/resources/lib/'%s'.chatHistory.txt", network.getLogin()))).count();
-            System.out.println(count);
             String strline;
             if(count <= 100){
                 while ((strline = reader.readLine()) != null) {
@@ -157,9 +194,29 @@ public class ChatController {
                 }
             }
         } catch (IOException e) {
-            logToConsole.error("Файл не может быть прочтен",e);
-            logToFile.error("Файл не может быть прочтен",e);
+            log.error("Файл не может быть прочтен",e);
         }
+    }
+    public void displayListview(String[] incomeUsers){
+        users.clear();
+        for (String str :incomeUsers) {
+            str = str.trim();
+            users.add(str);
+        }
+        usersList.getItems().clear();
+        for (String user : users) {
+            usersList.getItems().add(user);
+        }
+    }
 
+    public void displayListview(){
+        for (String str :users) {
+            str = str.trim();
+            users.add(str);
+        }
+        usersList.getItems().clear();
+        for (String user : users) {
+            usersList.getItems().add(user);
+        }
     }
 }

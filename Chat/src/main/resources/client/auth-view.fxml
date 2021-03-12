@@ -9,7 +9,7 @@
 
 <AnchorPane prefHeight="319.0" prefWidth="386.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controllers.AuthController">
     <children>
-        <Button alignment="CENTER" layoutX="134.0" layoutY="236.0" mnemonicParsing="false" onAction="#tryAuth" prefHeight="45.0" prefWidth="119.0" text="Sign In">
+        <Button alignment="CENTER" layoutX="206.0" layoutY="230.0" mnemonicParsing="false" onAction="#tryAuth" prefHeight="51.0" prefWidth="119.0" text="Sign In">
             <font>
                 <Font name="Minisystem" size="20.0" />
             </font>
@@ -26,5 +26,10 @@
                 <Font name="Minisystem" size="31.0" />
             </font>
         </Label>
+      <Button layoutX="61.0" layoutY="230.0" mnemonicParsing="false" onAction="#registration" prefHeight="51.0" prefWidth="119.0" text="Reg In">
+         <font>
+            <Font name="Minisystem" size="20.0" />
+         </font>
+      </Button>
     </children>
 </AnchorPane>

@@ -1,30 +1,21 @@
 package server.chat;
 
-
-
-import org.apache.log4j.Logger;
-import server.ServerApp;
+import server.Logging;
 import server.chat.auth.BaseAuthService;
 import server.chat.handler.ClientHandler;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.sql.*;
+import java.util.List;
 
 public class MyServer {
 
     private final ServerSocket serverSocket;
     private final BaseAuthService authService;
-    private final ArrayList<ClientHandler> clients = new ArrayList<>();
-
-    public Connection connection;
-    public Statement stmt;
-    public  ResultSet rs;
-
-    public static final Logger logToFile = Logger.getLogger("file");
-    public static final Logger logToConsole = Logger.getLogger("console");
+    private final List<ClientHandler> clients = new ArrayList<>();
+    private Logging log = new Logging();
 
     public MyServer(int port) throws IOException {
         this.serverSocket = new ServerSocket(port);
@@ -36,42 +27,23 @@ public class MyServer {
     }
 
     public void start() throws IOException {
-        logToConsole.info("Сервер запущен!");
-        logToFile.info("Сервер запущен!");
-        try {
-            connectionDB();
-        } catch (ClassNotFoundException | SQLException e) {
-            logToConsole.error("Ошибка с базой данных либо ошибка с поискам класса",e);
-            logToFile.error("Ошибка с базой данных либо ошибка с поискам класса",e);
-        }
-
+        log.info("Сервер запущен");
         try {
             while (true) {
                 waitAndProcessClientConnection();
             }
         }
         catch(IOException e) {
-            logToConsole.error("Произошло исключение ввода-вывода",e);
-            logToFile.error("Произошло исключение ввода-вывода",e);
-        }
-
-        try {
-            disconnectionDB();
-        } catch (SQLException e) {
-            logToConsole.error("Ошибка с базой данных",e);
-            logToFile.error("Ошибка с базой данных",e);
+            log.error("Произошло исключение ввода-вывода",e);
         }
     }
 
 
     private void waitAndProcessClientConnection() throws IOException {
-        logToConsole.info("Ожидание...");
-        logToFile.info("Ожидание...");
+        log.info("Ожидание");
         Socket socket = serverSocket.accept();
-
         processClientConnection(socket);
-        logToConsole.info("Клиент уже тут!");
-        logToFile.info("Клиент уже тут!");
+        log.info("Кто-то хочет присоединиться!");
     }
 
     private void processClientConnection(Socket socket) throws IOException {
@@ -80,13 +52,15 @@ public class MyServer {
     }
 
     public synchronized void subscribe (ClientHandler clientHandler) {
+        log.info("Клиент уже тут!");
         clients.add(clientHandler);
+        authService.usernames.add(clientHandler.getUsername());
     }
 
     public synchronized void unSubscribe (ClientHandler clientHandler) {
-        logToConsole.info("Клиент покинул чат");
-        logToFile.info("Клиент покинул чат");
+        log.info("Клиент покинул чат");
         clients.remove(clientHandler);
+        authService.usernames.remove(clientHandler.getUsername());
     }
 
     public synchronized boolean isUserNameBusy (String username) {
@@ -103,7 +77,12 @@ public class MyServer {
             if(client == sender) {
                 continue;
             }
-            client.sendMessage(isServerMessage ? "" : sender.getUsername(), message);
+            if(isServerMessage){
+                client.sendServerMessage(message);
+            }
+            else{
+                client.sendMessage(sender.getUsername(), message);
+            }
         }
     }
 
@@ -119,18 +98,9 @@ public class MyServer {
         }
     }
 
-    private void connectionDB() throws ClassNotFoundException, SQLException {
-        Class.forName("org.sqlite.JDBC");
-        connection = DriverManager.getConnection("jdbc:sqlite:src/main/resources/db/clients.db");
-        stmt = connection.createStatement();
-    }
-
-    private void disconnectionDB() throws SQLException {
-        connection.close();
-    }
-
-    public void changeUsername(ClientHandler clientHandler, String newUsername) throws SQLException {
-        String oldUsername = clientHandler.getUsername();
-        stmt.executeUpdate(String.format("UPDATE clients SET username = '%s' WHERE username = '%s'", newUsername, oldUsername));
+    public void broadcastChangedList() throws IOException {
+        for (ClientHandler client : clients) {
+            client.sendChangedList();
+        }
     }
 }
